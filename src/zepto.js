@@ -141,11 +141,24 @@ var Zepto = (function() {
     var dom, nodes, container
 
     // A special case optimization for a single tag
+    // singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/
+    // 匹配<p></p>完整的标签或<img />的单标签,$1为字母
+    // ?:的意思是匹配exp，不捕获匹配的文本，也不给此分组分配组号
+    // (?:<\/\1>|) 匹配闭合标签如：</p>或空闭合标签的情况
+    // 具有完整的标签就直接创建这个元素
+    // RegExp.$1表示test后匹配的第一个捕获组
     if (singleTagRE.test(html)) dom = $(document.createElement(RegExp.$1))
 
+    // 非单个标签，如<p/>
     if (!dom) {
+      // tagExpanderRE: /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig
+      // ?!表示 此位置之后不能匹配表达式exp，不匹配这些开头的单标签<input /><img>
+      // 作用在于扩展标签，如<p/>变成<p></p>
       if (html.replace) html = html.replace(tagExpanderRE, "<$1></$2>")
+      // fragmentRE: /^\s*<(\w+|!)[^>]*>/
+      // 取出html的第一个html标签（或注释），如取出<p></p>的p
       if (name === undefined) name = fragmentRE.test(html) && RegExp.$1
+      // 在containers找这个name，没找到默认创建div
       if (!(name in containers)) name = '*'
 
       container = containers[name]
@@ -154,11 +167,14 @@ var Zepto = (function() {
         container.removeChild(this)
       })
     }
-
+    // 在标签上创建属性
     if (isPlainObject(properties)) {
       nodes = $(dom)
       $.each(properties, function(key, value) {
+        // methodAttributes = ['val', 'css', 'html', 'text', 'data', 'width', 'height', 'offset']
+        // 可以直接在现有的方法上设置的
         if (methodAttributes.indexOf(key) > -1) nodes[key](value)
+        // 在attributes上设置
         else nodes.attr(key, value)
       })
     }
@@ -199,6 +215,7 @@ var Zepto = (function() {
       // nodes from there
       else if (context !== undefined) return $(context).find(selector)
       // If it's a CSS selector, use it to select nodes.
+      // css选择器切入点
       else dom = zepto.qsa(document, selector)
     }
     // If a function is given, call it when the DOM is ready
@@ -266,7 +283,7 @@ var Zepto = (function() {
         nameOnly = maybeID || maybeClass ? selector.slice(1) : selector, // Ensure that a 1 char tag name still gets checked
         isSimple = simpleSelectorRE.test(nameOnly)
     return (element.getElementById && isSimple && maybeID) ? // Safari DocumentFragment doesn't have getElementById
-      ( (found = element.getElementById(nameOnly)) ? [found] : [] ) :
+      ( (found = element.getElementById(nameOnly)) ? [found] : [] )  :
       (element.nodeType !== 1 && element.nodeType !== 9 && element.nodeType !== 11) ? [] :
       slice.call(
         isSimple && !maybeID && element.getElementsByClassName ? // DocumentFragment doesn't have getElementsByClassName/TagName
