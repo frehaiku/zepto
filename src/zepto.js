@@ -48,16 +48,32 @@ var Zepto = (function() {
     isArray = Array.isArray ||
       function(object){ return object instanceof Array }
 
+  // 判断dom元素与当前选择器是否匹配
   zepto.matches = function(element, selector) {
+    // selector和element参数为空及element不为一个元素节点时
+    // NodeType各种值表示的含义：
+    // 1：元素节点
+    // 3：文本节点
+    // 8：Comment节点
+    // 9：Document节点
+    // 10：DocumentType节点
+    // 11：DocumentFragment节点
     if (!selector || !element || element.nodeType !== 1) return false
     var matchesSelector = element.matches || element.webkitMatchesSelector ||
                           element.mozMatchesSelector || element.oMatchesSelector ||
                           element.matchesSelector
     if (matchesSelector) return matchesSelector.call(element, selector)
     // fall back to performing a selector:
+    // 处理不支持matches API的情况
     var match, parent = element.parentNode, temp = !parent
+    // 不存在父元素时（$中的参数为fragment时）
+    tempParent = document.createElement('div')
+    // 在一个临时的div中加入document
     if (temp) (parent = tempParent).appendChild(element)
+    // 用qsa函数去匹配元素，parent相当于一个上下文
+    // ~为按位非位操作符，用于~-1 = 0
     match = ~zepto.qsa(parent, selector).indexOf(element)
+    // 还原对tempParent的更改
     temp && tempParent.removeChild(element)
     return match
   }
