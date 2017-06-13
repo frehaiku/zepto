@@ -153,7 +153,7 @@ var Zepto = (function() {
     if (!dom) {
       // tagExpanderRE: /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig
       // ?!表示 此位置之后不能匹配表达式exp，不匹配这些开头的单标签<input /><img>
-      // 作用在于扩展标签，如<p/>变成<p></p>
+      // 作用在于扩展标签，如<p/>变成<p></p>。零宽断言不会捕获捕获组
       if (html.replace) html = html.replace(tagExpanderRE, "<$1></$2>")
       // fragmentRE: /^\s*<(\w+|!)[^>]*>/
       // 取出html的第一个html标签（或注释），如取出<p></p>的p
@@ -481,14 +481,20 @@ var Zepto = (function() {
           this.parentNode.removeChild(this)
       })
     },
+    // 为每个zepto集合执行回调函数
     each: function(callback){
+      // 函数结果为false时终止下一项执行,
+      // every函数的this执行each的this，也就是$('xxx').each的$('xxx')
       emptyArray.every.call(this, function(el, idx){
+        // 改变callback的this指向为当前遍历的元素
+        // 传入的第一个参数为该项的index，第二个参数为当前遍历的元素
         return callback.call(el, idx, el) !== false
       })
       return this
     },
     filter: function(selector){
       if (isFunction(selector)) return this.not(this.not(selector))
+      // selector为非函数（字符串，类数组等）
       return $(filter.call(this, function(element){
         return zepto.matches(element, selector)
       }))
@@ -499,13 +505,18 @@ var Zepto = (function() {
     is: function(selector){
       return this.length > 0 && zepto.matches(this[0], selector)
     },
+    // 过滤当前对象集合，与filter相反
     not: function(selector){
+      // 需返回的数组集合
       var nodes=[]
+      // 是函数且存在call方法
       if (isFunction(selector) && selector.call !== undefined)
         this.each(function(idx){
+          // selector函数的返回值为false时
           if (!selector.call(this,idx)) nodes.push(this)
         })
       else {
+        // 先找出符合的元素，再用indexOf取反
         var excludes = typeof selector == 'string' ? this.filter(selector) :
           (likeArray(selector) && isFunction(selector.item)) ? slice.call(selector) : $(selector)
         this.forEach(function(el){
